@@ -3,10 +3,29 @@
 
 #define BINARY 1
 
+#include "vision_utilities.h"
+
 /** Keeps track of which labels are equivalent for the sequential labeling algorithm */
 typedef struct labelMap {
-	int number, classes, *map;
+	int number, nClasses;
+	int *map, *labels, **classes;
+	Image *im;
 } labelMap;
+
+/** Make a new labelMap for the given Image */
+labelMap makeLabelMap(Image *);
+
+/** Get the label at a given pixel */
+int getLabel(labelMap *, int, int);
+
+/** Set the label at a given pixel */
+void setLabel(labelMap *, int, int, int);
+
+/** Resolve the label at a given pixel to its equivalence class */
+void resolveLabel(labelMap *, int, int);
+
+/** Get a pointer to the Image to which this labelMap applies */
+Image *getImage(labelMap *);
 
 /** Get the total number of (not necessarily distinct) labels in the map */
 int getNLabels(labelMap *);

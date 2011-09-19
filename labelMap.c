@@ -13,6 +13,40 @@
 #define ITRANS(x) x-1
 #define OTRANS(x) x+1
 
+labelMap makeLabelMap(Image *im)
+{
+	labelMap lm;
+	memset(&lm, 0, sizeof lm);
+	lm.labels=(int *)malloc(getNRows(im)*getNCols(im)*sizeof(int));
+	memset(lm.labels, 0, sizeof(getNRows(im)*getNCols(im)*sizeof(int)));
+	lm.im=im;
+	return lm;
+}
+
+int getLabel(labelMap *lm, int i, int j)
+{
+	return lm->labels[i*getNCols(lm->im)+j];
+}
+
+void setLabel(labelMap *lm, int i, int j, int l)
+{
+	lm->labels[i*getNCols(lm->im)+j]=l;
+}
+
+void resolveLabel(labelMap *lm, int i, int j)
+{
+	int l=getLabel(lm, i, j);
+	if (l > 0) {
+		setLabel(lm, i, j, getClass(lm, l));
+		setPixel(lm->im, i, j, getLabel(lm, i, j));
+	}
+}
+
+Image *getImage(labelMap *lm)
+{
+	return lm->im;
+}
+
 int getNLabels(labelMap *lm) { return lm->number; }
 
 void addLabel(labelMap *lm)
@@ -28,7 +62,7 @@ void addLabel(labelMap *lm)
 		exit(1);
 	}
 	lm->map[n]=m;
-	lm->classes++;
+	lm->nClasses++;
 }
 
 void setEquivalent(labelMap *lm, int i, int j)
@@ -48,7 +82,7 @@ void setEquivalent(labelMap *lm, int i, int j)
 	for (k=0; k < lm->number; ++k)
 		if (lm->map[k]==lm->map[j])
 			lm->map[k]=lm->map[i];
-	lm->classes--;
+	lm->nClasses--;
 }
 
 int isEquivalent(labelMap *lm, int i, int j)
@@ -63,28 +97,46 @@ int getClass(labelMap *lm, int i)
 
 int getNClasses(labelMap *lm)
 {
-	return lm->classes;
+	return lm->nClasses;
+}
+
+void verifyMap(labelMap *lm)
+{
+	int i, *classes, count=0;
+	
+	classes=(int *)malloc(lm->number*sizeof(int));
+	memset(classes, 0, lm->number*sizeof(int));
+
+	for (i=0; i < lm->number; ++i)
+		if (!classes[lm->map[i]-1])
+			count+=classes[lm->map[i]-1]=1;
+	if (count != lm->nClasses) {
+		fprintf(stderr, "class verification failed. expected: %d, got: %d\n", lm->nClasses, count);
+		exit(2);
+	}
 }
 
 void reduceLabels(labelMap *lm)
 {
 	int *taken, i, k, class[2], c=0;
 
-	taken=(int *)malloc(lm->classes*sizeof(int));
-	memset(taken, 0, lm->classes*sizeof(int));
+	verifyMap(lm);
+
+	taken=(int *)malloc(lm->nClasses*sizeof(int));
+	memset(taken, 0, lm->nClasses*sizeof(int));
 
 	for (i=0; i < lm->number; ++i)
-		if (lm->map[i] <= lm->classes)
+		if (lm->map[i] <= lm->nClasses)
 			taken[lm->map[i]-1]=1;
 
 	for (i=0; i < lm->number; ++i) {
 		/* the label's equivalence class has an illegal value 
 		 * if it is greater than the number of existing classes */
-		if (lm->map[i] > lm->classes) { 
+		if (lm->map[i] > lm->nClasses) { 
 			/* the first break in the sequence of assigned classes is found
 			 * and the illegal value is mapped to it throughout 
 			 * the list of labels */
-			for (k=0; k < lm->classes; ++k)
+			for (k=0; k < lm->nClasses; ++k)
 				if (!taken[k]) break;
 			taken[k]=1;
 
@@ -102,7 +154,7 @@ void reduceLabels(labelMap *lm)
 
 			/* check that all classes are not legal */
 			c=0;
-			for (k=0; k < lm->classes; ++k)
+			for (k=0; k < lm->nClasses; ++k)
 				if (!taken[k]) {
 					c=1;
 					break;
@@ -129,4 +181,5 @@ void printClasses(labelMap *lm)
 void freeLabelMap(labelMap *lm)
 {
 	free(lm->map);
+	free(lm->labels);
 }

@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "vision_utilities.h"
 #include "hw2.h"
 
 #define NNEIGHB 3
@@ -20,8 +19,8 @@ enum {
 
 void binaryToLabeled(char *, char *);
 int isBinary(Image *);
-void labelPixel(Image *, int, int, labelMap *);
-void resolvePixel(Image *, int, int, labelMap *);
+void labelPixel(labelMap *, int, int);
+void resolvePixel(labelMap *, int, int);
 void sequentialLabeling(Image *);
 
 int main(int argc, char *argv[])
@@ -70,17 +69,22 @@ void binaryToLabeled(char *ifname, char *ofname)
 void sequentialLabeling(Image *im)
 {
 	int rows, cols;
+	int *labels;
 	int i, j;
-	labelMap lm;
-
-	memset(&lm, 0, sizeof lm); /* initialize memory */
+	labelMap lm=makeLabelMap(im);
 
 	rows=getNRows(im);
 	cols=getNCols(im);
 
+	labels=(int *)malloc(rows*cols*sizeof(int));
+	if (labels == NULL) {
+		fprintf(stderr, "memory error\n");
+		exit(2);
+	}
+
 	for (i=0; i < rows; ++i)
 		for (j=0; j < cols; ++j)
-			labelPixel(im, i, j, &lm);
+			labelPixel(&lm, i, j);
 
 	/* reduce the equivalence classes of the labels 
 	 * so that their indices are consecutive */
@@ -88,42 +92,43 @@ void sequentialLabeling(Image *im)
 
 	for (i=0; i < rows; ++i)
 		for (j=0; j < cols; ++j)
-			resolvePixel(im, i, j, &lm);
+			resolvePixel(&lm, i, j);
 	
 	printf("%d\n", getNClasses(&lm));
 	setColors(im, getNClasses(&lm));
 	freeLabelMap(&lm);
 }
 
-int getNeighbors(Image *im, int i, int j, int neighbors[3])
+int getNeighbors(labelMap *lm, int i, int j, int neighbors[NNEIGHB])
 {
 	int has=0;
-	if (j) has+=neighbors[WEST]=getPixel(im, i, j-1); /* west */
-	if (i && j) has+=neighbors[NORTHWEST]=getPixel(im, i-1, j-1); /* northwest */
-	if (i) has+=neighbors[NORTH]=getPixel(im, i-1, j); /* north */
-	return has;
+	memset(neighbors, 0, sizeof neighbors);
+	if (j) has+=neighbors[WEST]=getLabel(lm, i, j-1);
+	if (i && j) has+=neighbors[NORTHWEST]=getLabel(lm, i-1, j-1);
+	if (i) has+=neighbors[NORTH]=getLabel(lm, i-1, j);
+	return !has;
 }
 
-int evalNeighbor(int k, labelMap *lm, int neighbors[3])
+int evalNeighbor(int k, labelMap *lm, int neighbors[NNEIGHB])
 {
 	int l, c=neighbors[k];
 	for (l=k+1; l < NNEIGHB; ++l)
 		if (neighbors[l]) {
 			setEquivalent(lm, neighbors[k], neighbors[l]);
-			if (neighbors[l] > neighbors[k]) c=neighbors[l];
+			if (neighbors[l] > c) c=neighbors[l];
 		}
 	return c;
 }
 
-void labelPixel(Image *im, int i, int j, labelMap *lm) 
+void labelPixel(labelMap *lm, int i, int j) 
 {
-	if (getPixel(im, i, j) > 0) {
-		int neighbors[3], newObj, k, c;
+	if (getPixel(lm->im, i, j) > 0) {
+		int neighbors[NNEIGHB], newObj, k, c;
 
 		memset(neighbors, 0, sizeof neighbors);
-		newObj=getNeighbors(im, i, j, neighbors);
+		newObj=getNeighbors(lm, i, j, neighbors);
 
-		if (newObj) {
+		if (!newObj) {
 			for (k=0; k < NNEIGHB; ++k)
 				if (neighbors[k]) {
 					c=evalNeighbor(k, lm, neighbors);
@@ -133,16 +138,17 @@ void labelPixel(Image *im, int i, int j, labelMap *lm)
 			addLabel(lm);
 			c=getNLabels(lm);
 		}
-		setPixel(im, i, j, c);
-		assert(lm->classes > 0);
+		setLabel(lm, i, j, c);
+		assert(getLabel(lm, i, j)==c);
+		assert(lm->nClasses > 0);
 	}
 }
 
-void resolvePixel(Image *im, int i, int j, labelMap *lm)
+void resolvePixel(labelMap *lm, int i, int j)
 {
-	int px=getPixel(im, i, j);
+	int px=getPixel(lm->im, i, j);
 	if (px > 0)
-		setPixel(im, i, j, getClass(lm, px));
+		resolveLabel(lm, i, j);
 }
 
 int isBinary(Image *im) { return getColors(im) == BINARY; }
