@@ -7,7 +7,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "vision_utilities.h"
 #include "hw2.h"
 
 int grayscale_to_binary(const char *, int, const char *);
