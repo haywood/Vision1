@@ -37,8 +37,14 @@ void resolveLabel(labelMap *lm, int i, int j)
 {
 	int l=getLabel(lm, i, j);
 	if (l > 0) {
-		setLabel(lm, i, j, getClass(lm, l));
-		setPixel(lm->im, i, j, getLabel(lm, i, j));
+		int c=getClass(lm, l);
+		if (c <= PIXEL_MAX) {
+			setLabel(lm, i, j, c);
+			setPixel(lm->im, i, j, c);
+		} else {
+			fprintf(stderr, "there are too many objects in the image\n");
+			exit(2);
+		}
 	}
 }
 

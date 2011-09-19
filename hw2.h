@@ -2,6 +2,7 @@
 #define HW2_H_
 
 #define BINARY 1
+#define PIXEL_MAX 255
 
 #include "vision_utilities.h"
 
