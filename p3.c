@@ -11,14 +11,14 @@
 
 #include "hw2.h"
 
-void getObjects(Image *, objectDB *);
-void writeDatabase(objectDB *, const char *);
-void drawLines(Image *, objectDB *);
+void getObjects(Image *, ObjectDB *);
+void writeDatabase(ObjectDB *, const char *);
+void drawLines(Image *, ObjectDB *);
 
 int main(int argc, char *argv[])
 {
 	char *ifname, *odname, *ofname;
-	objectDB odb;
+	ObjectDB odb;
 	Image im;
 
 	if (argc < 4) {
@@ -43,14 +43,14 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-void getObjects(Image *im, objectDB *odb)
+void getObjects(Image *im, ObjectDB *odb)
 {
 	int i, j, px, 
 		 a, b, c,
 		 xp, yp;
 	double theta[2];
 	double E[2];
-	object *obj;
+	Object *obj;
 
 	/* get area, calculate bounding boxes, and begin calculating centers */
 	for (i=0; i < getNRows(im); ++i) {
@@ -81,8 +81,8 @@ void getObjects(Image *im, objectDB *odb)
 			px=getPixel(im, i, j);
 			if (px > 0) {
 				obj=odb->objs+px-1;
-				xp= i - obj->fm[0];
-				yp= j - obj->fm[1];
+				xp= j - obj->fm[1];
+				yp= i - obj->fm[0];
 				obj->sm.a+=xp*xp;
 				obj->sm.b+=xp*yp;
 				obj->sm.c+=yp*yp;
@@ -113,7 +113,7 @@ void getObjects(Image *im, objectDB *odb)
 	}
 }
 
-void writeObject(FILE *f, object *o)
+void writeObject(FILE *f, Object *o)
 {
 	double eMin=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMin),
 			 eMax=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMax);
@@ -122,11 +122,11 @@ void writeObject(FILE *f, object *o)
 			o->label, 
 			o->fm[0], o->fm[1],
 			eMin,
-			PI/2.0 - o->sm.thetaMin,
+			DEG_PER_RAD*fmod(PI - o->sm.thetaMin, PI),
 			eMin/eMax);
 }
 
-void writeDatabase(objectDB *odb, const char *dbname)
+void writeDatabase(ObjectDB *odb, const char *dbname)
 {
 	FILE *f=fopen(dbname, "w");
 	int i;
@@ -139,15 +139,18 @@ void writeDatabase(objectDB *odb, const char *dbname)
 	fclose(f);
 }
 
-void drawLines(Image *im, objectDB *odb)
+void drawLines(Image *im, ObjectDB *odb)
 {
-	double h, v;
-	object *obj;
+	double h, v, m, n;
+	Object *obj;
 	int i;
 	for (i=0; i < odb->nObjects; ++i) {
+		m=obj->right - obj->left;
+		n=obj->bottom - obj->top;
+		if (m>n) n=m;
 		obj=odb->objs+i;
-		h=(obj->right - obj->left)*cos(obj->sm.thetaMin);
-		v=(obj->bottom - obj->top)*sin(obj->sm.thetaMin);
+		h=n*cos(obj->sm.thetaMin);
+		v=n*sin(obj->sm.thetaMin);
 		line(im, 
 				obj->fm[0] - v,
 				obj->fm[1] - h,

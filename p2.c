@@ -19,8 +19,8 @@ enum {
 
 void binaryToLabeled(char *, char *);
 int isBinary(Image *);
-void labelPixel(labelMap *, int, int);
-void resolvePixel(labelMap *, int, int);
+void labelPixel(LabelMap *, int, int);
+void resolvePixel(LabelMap *, int, int);
 void sequentialLabeling(Image *);
 
 int main(int argc, char *argv[])
@@ -71,7 +71,7 @@ void sequentialLabeling(Image *im)
 	int rows, cols;
 	int *labels;
 	int i, j;
-	labelMap lm=makeLabelMap(im);
+	LabelMap lm=makeLabelMap(im);
 
 	rows=getNRows(im);
 	cols=getNCols(im);
@@ -98,7 +98,7 @@ void sequentialLabeling(Image *im)
 	freeLabelMap(&lm);
 }
 
-int getNeighbors(labelMap *lm, int i, int j, int neighbors[NNEIGHB])
+int getNeighbors(LabelMap *lm, int i, int j, int neighbors[NNEIGHB])
 {
 	int has=0;
 	memset(neighbors, 0, sizeof neighbors);
@@ -108,7 +108,7 @@ int getNeighbors(labelMap *lm, int i, int j, int neighbors[NNEIGHB])
 	return !has;
 }
 
-int evalNeighbor(int k, labelMap *lm, int neighbors[NNEIGHB])
+int evalNeighbor(int k, LabelMap *lm, int neighbors[NNEIGHB])
 {
 	int l, c=neighbors[k];
 	for (l=k+1; l < NNEIGHB; ++l)
@@ -119,7 +119,7 @@ int evalNeighbor(int k, labelMap *lm, int neighbors[NNEIGHB])
 	return c;
 }
 
-void labelPixel(labelMap *lm, int i, int j) 
+void labelPixel(LabelMap *lm, int i, int j) 
 {
 	if (getPixel(lm->im, i, j) > 0) {
 		int neighbors[NNEIGHB], newObj, k, c;
@@ -143,7 +143,7 @@ void labelPixel(labelMap *lm, int i, int j)
 	}
 }
 
-void resolvePixel(labelMap *lm, int i, int j)
+void resolvePixel(LabelMap *lm, int i, int j)
 {
 	int px=getPixel(lm->im, i, j);
 	if (px > 0)

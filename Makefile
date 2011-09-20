@@ -20,8 +20,8 @@ UTILSH = vision_utilities.h
 # Enter the names of your source files here. If you have header files as well,
 # then do not include them here (they will be autoincluded).
 P1SRC = p1.c
-P2SRC = p2.c labelMap.c
-P3SRC = p3.c object.c
+P2SRC = p2.c LabelMap.c
+P3SRC = p3.c Object.c
 P4SRC = p4.c
 
 # Threshold for binarization. Change this.
