@@ -46,8 +46,7 @@ int main(int argc, char *argv[])
 void getObjects(Image *im, ObjectDB *odb)
 {
 	int i, j, px, 
-		 a, b, c,
-		 xp, yp;
+		 a, b, c;
 	double theta[2];
 	double E[2];
 	Object *obj;
@@ -65,52 +64,44 @@ void getObjects(Image *im, ObjectDB *odb)
 				obj->fm[0]+=i;
 				obj->fm[1]+=j;
 				obj->area++;
+				obj->sm.a+=i*i;
+				obj->sm.b+=i*j;
+				obj->sm.c+=j*j;
 			}
 		}
 	}
 
-	/* finish centers */
+	/* finish centers and second moment coefficients */
 	for (i=0; i < odb->nObjects; ++i)
-		for (j=0; j < DIM; ++j)
-			if (odb->objs[i].area > 0)
-				odb->objs[i].fm[j]/=odb->objs[i].area;
+		if (odb->objs[i].area > 0) {
+			obj=odb->objs+i;
+			for (j=0; j < DIM; ++j)
+				obj->fm[j]/=obj->area;
 
-	/* second pass over image to calculate moment coefficients */
-	for (i=0; i < getNRows(im); ++i) {
-		for (j=0; j < getNRows(im); ++j) {
-			px=getPixel(im, i, j);
-			if (px > 0) {
-				obj=odb->objs+px-1;
-				xp= j - obj->fm[1];
-				yp= i - obj->fm[0];
-				obj->sm.a+=xp*xp;
-				obj->sm.b+=xp*yp;
-				obj->sm.c+=yp*yp;
+			/* TODO Explain this reduction */
+			obj->sm.a-=obj->fm[0]*obj->fm[0]*obj->area;
+			obj->sm.b-=obj->fm[0]*obj->fm[1]*obj->area;
+			obj->sm.b*=2;
+			obj->sm.c-=obj->fm[1]*obj->fm[1]*obj->area;
+
+			a=obj->sm.a;
+			b=obj->sm.b;
+			c=obj->sm.c;
+
+			theta[0]=0.5*atan((double)b/a-c);
+			theta[1]=fabs(theta[0] + PI/2.0);
+
+			E[0]=secondMoment(a, b, c, theta[0]);
+			E[1]=secondMoment(a, b, c, theta[1]);
+
+			if (E[0] > E[1]) {
+				obj->sm.thetaMin=theta[1];
+				obj->sm.thetaMax=theta[0];
+			} else {
+				obj->sm.thetaMin=theta[0];
+				obj->sm.thetaMax=theta[1];
 			}
 		}
-	}
-
-	/* get the angles for the extreme values of the moment */
-	for (i=0; i < odb->nObjects; ++i) {
-		obj=&odb->objs[i];
-		a=obj->sm.a;
-		b=obj->sm.b*=2;
-		c=obj->sm.c;
-
-		theta[0]=0.5*atan((double)b/a-c);
-		theta[1]=fabs(theta[0] + PI/2.0);
-
-		E[0]=secondMoment(a, b, c, theta[0]);
-		E[1]=secondMoment(a, b, c, theta[1]);
-
-		if (E[0] > E[1]) {
-			obj->sm.thetaMin=theta[1];
-			obj->sm.thetaMax=theta[0];
-		} else {
-			obj->sm.thetaMin=theta[0];
-			obj->sm.thetaMax=theta[1];
-		}
-	}
 }
 
 void writeObject(FILE *f, Object *o)
@@ -118,13 +109,15 @@ void writeObject(FILE *f, Object *o)
 	double eMin=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMin),
 			 eMax=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMax);
 	
-	fprintf(f, "%d %d %d %f %f %f %f\n",
+	/* label center-row center-col Emin thetaMin roundness area/bounding-area top bottom left right*/
+	fprintf(f, "%d %d %d %f %f %f %f %d %d %d %d\n",
 			o->label, 
 			o->fm[0], o->fm[1],
 			eMin,
 			DEG_PER_RAD*fmod(PI - o->sm.thetaMin, PI),
 			eMin/eMax,
-			(double)o->area/((o->right-o->left)*(o->bottom-o->top)));
+			(double)o->area/((o->right-o->left)*(o->bottom-o->top)),
+			o->top, o->bottom, o->left, o->right);
 }
 
 void writeDatabase(ObjectDB *odb, const char *dbname)
@@ -146,10 +139,10 @@ void drawLines(Image *im, ObjectDB *odb)
 	Object *obj;
 	int i;
 	for (i=0; i < odb->nObjects; ++i) {
+		obj=odb->objs+i;
 		m=obj->right - obj->left;
 		n=obj->bottom - obj->top;
 		if (m>n) n=m;
-		obj=odb->objs+i;
 		h=n*cos(obj->sm.thetaMin);
 		v=n*sin(obj->sm.thetaMin);
 		line(im, 
