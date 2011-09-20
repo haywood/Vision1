@@ -1,6 +1,6 @@
 /**
- * object.c
- * Contains methods for the object struct as defined in hw2.h.
+ * Object.c
+ * Contains methods for the Object struct as defined in hw2.h.
  */
 
 #include <stdlib.h>
@@ -8,12 +8,12 @@
 
 #include "hw2.h"
 
-void makeODB(objectDB *odb, int n)
+void makeODB(ObjectDB *odb, int n)
 {
 	SecondMoment *sm;
-	object *obj;
+	Object *obj;
 	int i;
-	odb->objs=(object *)malloc(n*sizeof(object));
+	odb->objs=(Object *)malloc(n*sizeof(Object));
 	odb->nObjects=n;
 	for (i=0; i < n; ++i) {
 		obj=odb->objs+i;
