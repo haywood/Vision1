@@ -1,7 +1,12 @@
+/**
+ * hw2.h
+ * Contains useful typedefs and macros.
+ */
 #ifndef HW2_H_
 #define HW2_H_
 
 #define BINARY 1
+#define DIM 2
 #define PIXEL_MAX 255
 
 #include "vision_utilities.h"
@@ -13,46 +18,28 @@ typedef struct labelMap {
 	Image *im;
 } labelMap;
 
-/** Make a new labelMap for the given Image */
-labelMap makeLabelMap(Image *);
+#include "labelMap.h"
 
-/** Get the label at a given pixel */
-int getLabel(labelMap *, int, int);
+/** Holds an object's second moment */
+typedef struct SecondMoment {
+	int a, b, c;
+	double thetaMin, thetaMax;
+} SecondMoment;
 
-/** Set the label at a given pixel */
-void setLabel(labelMap *, int, int, int);
+/** Holds data on objects found in an image */
+typedef struct object {
+	int label;
+	int fm[DIM];
+	SecondMoment sm;
+	int top, bottom, left, right;
+	int area;
+} object;
 
-/** Resolve the label at a given pixel to its equivalence class */
-void resolveLabel(labelMap *, int, int);
+typedef struct objectDB {
+	object *objs;
+   int nObjects;
+} objectDB;
 
-/** Get a pointer to the Image to which this labelMap applies */
-Image *getImage(labelMap *);
-
-/** Get the total number of (not necessarily distinct) labels in the map */
-int getNLabels(labelMap *);
-
-/** Add a new label to the labelMap */
-void addLabel(labelMap *);
-
-/** Check if two labels are equivalent under this labelMap */
-int isEquivalent(labelMap *, int, int);
-
-/** Set two labels equivalent under this labelMap */
-void setEquivalent(labelMap *, int, int);
-
-/** Get the minimum equivalent value for a given label */
-int getClass(labelMap *, int);
-
-/** Get the number of equivalence classes of labels */
-int getNClasses(labelMap *);
-
-/** Reduce the equivalence class labels to their minimum values */
-void reduceLabels(labelMap *);
-
-/** Print the equivalence classes of the labelMap */
-void printClasses(labelMap *);
-
-/** Dellocate resources held by the labelMap */
-void freeLabelMap(labelMap *);
+#include "object.h"
 
 #endif /* HW2_H_ */

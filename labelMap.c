@@ -156,11 +156,13 @@ void reduceLabels(labelMap *lm)
 
 	while (c < lm->nClasses) {
 		while (lm->classes[c][0]) c++;
-		if (lm->classes[i][0]) { 
+		if (c < lm->nClasses && lm->classes[i][0]) { 
 			mergeClasses(lm, c, i);
 		}
-		free(lm->classes[i]);
-		i++;
+		if (i < lm->nLabels)  {
+			free(lm->classes[i]);
+			i++;
+		}
 	}
 	lm->classes=(int **)realloc(lm->classes, lm->nClasses*sizeof(int*));
 	lm->nLabels=lm->nClasses;

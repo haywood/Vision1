@@ -21,11 +21,11 @@ UTILSH = vision_utilities.h
 # then do not include them here (they will be autoincluded).
 P1SRC = p1.c
 P2SRC = p2.c labelMap.c
-P3SRC = p3.c
+P3SRC = p3.c object.c
 P4SRC = p4.c
 
 # Threshold for binarization. Change this.
-THRESHOLD = 120
+THRESHOLD = 11
 
 # This contains a list of various images and other files generated from 
 # running your programs. By default, it contains the filenames of all files
