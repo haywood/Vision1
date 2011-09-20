@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <assert.h>
 
 #include "hw2.h"
 
@@ -40,10 +39,7 @@ void resolveLabel(labelMap *lm, int i, int j)
 		if (c <= PIXEL_MAX) {
 			setLabel(lm, i, j, c);
 			setPixel(lm->im, i, j, c);
-		} else {
-			fprintf(stderr, "there are too many objects in the image\n");
-			exit(2);
-		}
+		}	
 	}
 }
 
@@ -155,7 +151,7 @@ void reduceLabels(labelMap *lm)
 	i=lm->nClasses;
 
 	while (c < lm->nClasses) {
-		while (lm->classes[c][0]) c++;
+		while (c < lm->nClasses && lm->classes[c][0]) c++;
 		if (c < lm->nClasses && lm->classes[i][0]) { 
 			mergeClasses(lm, c, i);
 		}

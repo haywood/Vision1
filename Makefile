@@ -25,7 +25,7 @@ P3SRC = p3.c object.c
 P4SRC = p4.c
 
 # Threshold for binarization. Change this.
-THRESHOLD = 11
+THRESHOLD = 111 
 
 # This contains a list of various images and other files generated from 
 # running your programs. By default, it contains the filenames of all files
