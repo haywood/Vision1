@@ -88,7 +88,7 @@ void getObjects(Image *im, ObjectDB *odb)
 			b=obj->sm.b;
 			c=obj->sm.c;
 
-			theta[0]=0.5*atan((double)b/a-c);
+			theta[0]=0.5*atan((double)b/(a-c));
 			theta[1]=fabs(theta[0] + PI/2.0);
 
 			E[0]=secondMoment(a, b, c, theta[0]);
@@ -114,7 +114,7 @@ void writeObject(FILE *f, Object *o)
 			o->label, 
 			o->fm[0], o->fm[1],
 			eMin,
-			DEG_PER_RAD*fmod(PI - o->sm.thetaMin, PI),
+			DEG_PER_RAD*(PI - o->sm.thetaMin),
 			eMin/eMax,
 			(double)o->area/((o->right-o->left)*(o->bottom-o->top)),
 			o->top, o->bottom, o->left, o->right);
@@ -135,21 +135,23 @@ void writeDatabase(ObjectDB *odb, const char *dbname)
 
 void drawLines(Image *im, ObjectDB *odb)
 {
-	double h, v, m, n;
+	double i, j;
 	Object *obj;
-	int i;
-	for (i=0; i < odb->nObjects; ++i) {
-		obj=odb->objs+i;
-		m=obj->right - obj->left;
-		n=obj->bottom - obj->top;
-		if (m>n) n=m;
-		h=n*cos(obj->sm.thetaMin);
-		v=n*sin(obj->sm.thetaMin);
+	int k, b, h, d;
+
+	setColors(im, getColors(im)+1); /* add new level for lines */
+	for (k=0; k < odb->nObjects; ++k) {
+		obj=odb->objs+k;
+		b=obj->right - obj->left;
+		h=obj->bottom - obj->top;
+		d=sqrt(b*b+h*h)/2.0;
+		i=d*sin(obj->sm.thetaMin);
+		j=d*cos(obj->sm.thetaMin);
 		line(im, 
-				obj->fm[0] - v,
-				obj->fm[1] - h,
-				obj->fm[0] + v,
-				obj->fm[1] + h,
-				i);
+				obj->fm[0] - i,
+				obj->fm[1] - j,
+				obj->fm[0] + i,
+				obj->fm[1] + j,
+				getColors(im)-1);
 	}
 }
