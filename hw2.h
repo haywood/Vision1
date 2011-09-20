@@ -8,7 +8,7 @@
 
 /** Keeps track of which labels are equivalent for the sequential labeling algorithm */
 typedef struct labelMap {
-	int number, nClasses;
+	int nLabels, nClasses;
 	int *map, *labels, **classes;
 	Image *im;
 } labelMap;
