@@ -105,7 +105,6 @@ void mergeClasses(labelMap *lm, int toClass, int frClass)
 		lm->map[frp[i]]=toClass+1;
 
 	resizeClass(lm, frClass, 0);
-	lm->nClasses--;
 }
 
 void setEquivalent(labelMap *lm, int i, int j)
@@ -117,6 +116,7 @@ void setEquivalent(labelMap *lm, int i, int j)
 	else if (lm->map[j] < lm->map[i]) {
 		mergeClasses(lm, lm->map[j]-1, lm->map[i]-1);
 	} else mergeClasses(lm, lm->map[i]-1, lm->map[j]-1);
+	lm->nClasses--;
 }
 
 int isEquivalent(labelMap *lm, int i, int j)
@@ -136,14 +136,11 @@ int getNClasses(labelMap *lm)
 
 void verifyMap(labelMap *lm)
 {
-	int i, *classes, count=0;
+	int i, count=0;
 	
-	classes=(int *)malloc(lm->nLabels*sizeof(int));
-	memset(classes, 0, lm->nLabels*sizeof(int));
-
 	for (i=0; i < lm->nLabels; ++i)
-		if (!classes[lm->map[i]-1])
-			count+=classes[lm->map[i]-1]=1;
+		if (lm->classes[i][0]) count++;
+
 	if (count != lm->nClasses) {
 		fprintf(stderr, "class verification failed. expected: %d, got: %d\n", lm->nClasses, count);
 		exit(2);
@@ -152,52 +149,21 @@ void verifyMap(labelMap *lm)
 
 void reduceLabels(labelMap *lm)
 {
-	int *taken, i, k, class[2], c=0;
+	int i, c=0;
 
 	verifyMap(lm);
+	i=lm->nClasses;
 
-	taken=(int *)malloc(lm->nClasses*sizeof(int));
-	memset(taken, 0, lm->nClasses*sizeof(int));
-
-	for (i=0; i < lm->nLabels; ++i)
-		if (lm->map[i] <= lm->nClasses)
-			taken[lm->map[i]-1]=1;
-
-	for (i=0; i < lm->nLabels; ++i) {
-		/* the label's equivalence class has an illegal value 
-		 * if it is greater than the number of existing classes */
-		if (lm->map[i] > lm->nClasses) { 
-			/* the first break in the sequence of assigned classes is found
-			 * and the illegal value is mapped to it throughout 
-			 * the list of labels */
-			for (k=0; k < lm->nClasses; ++k)
-				if (!taken[k]) break;
-			taken[k]=1;
-
-			class[0]=lm->map[i]; /* from */
-			class[1]=k+1; /* to */
-
-			/* give the selected class its new legal value
-			 * this loop only goes through labels after 
-			 * and including the one selected since earlier labels
-			 * have already been accounted for
-			 */
-			for (k=i; k < lm->nLabels; ++k)
-				if (lm->map[k] == class[0])
-					lm->map[k]=class[1];
-
-			/* check that all classes are not legal */
-			c=0;
-			for (k=0; k < lm->nClasses; ++k)
-				if (!taken[k]) {
-					c=1;
-					break;
-				}
-			if (!c) break;
+	while (c < lm->nClasses) {
+		while (lm->classes[c][0]) c++;
+		if (lm->classes[i][0]) { 
+			mergeClasses(lm, c, i);
 		}
+		free(lm->classes[i]);
+		i++;
 	}
-
-	free(taken);
+	lm->classes=(int **)realloc(lm->classes, lm->nClasses*sizeof(int*));
+	lm->nLabels=lm->nClasses;
 }
 
 void printClasses(labelMap *lm)
@@ -210,10 +176,15 @@ void printClasses(labelMap *lm)
 			printed[lm->map[i]]=1;
 		}
 	}
+	free(printed);
 }
 
 void freeLabelMap(labelMap *lm)
 {
+	int i;
 	free(lm->map);
 	free(lm->labels);
+	for (i=0; i < lm->nLabels; ++i)
+		free(lm->classes[i]);
+	free(lm->classes);
 }

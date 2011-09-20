@@ -94,7 +94,6 @@ void sequentialLabeling(Image *im)
 		for (j=0; j < cols; ++j)
 			resolvePixel(&lm, i, j);
 	
-	printf("%d\n", getNClasses(&lm));
 	setColors(im, getNClasses(&lm));
 	freeLabelMap(&lm);
 }
