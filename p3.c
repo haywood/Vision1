@@ -94,7 +94,7 @@ void getObjects(Image *im, ObjectDB *odb)
 	for (i=0; i < odb->nObjects; ++i) {
 		obj=&odb->objs[i];
 		a=obj->sm.a;
-		b=obj->sm.b;
+		b=obj->sm.b*=2;
 		c=obj->sm.c;
 
 		theta[0]=0.5*atan((double)b/a-c);
@@ -118,12 +118,13 @@ void writeObject(FILE *f, Object *o)
 	double eMin=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMin),
 			 eMax=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMax);
 	
-	fprintf(f, "%d %d %d %f %f %f\n",
+	fprintf(f, "%d %d %d %f %f %f %f\n",
 			o->label, 
 			o->fm[0], o->fm[1],
 			eMin,
 			DEG_PER_RAD*fmod(PI - o->sm.thetaMin, PI),
-			eMin/eMax);
+			eMin/eMax,
+			(double)o->area/((o->right-o->left)*(o->bottom-o->top)));
 }
 
 void writeDatabase(ObjectDB *odb, const char *dbname)
