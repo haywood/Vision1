@@ -1,6 +1,6 @@
 /**
- * labelMap.c
- * implements functions for the labelMap struct
+ * LabelMap.c
+ * implements functions for the LabelMap struct
  */
 
 #include <stdlib.h>
@@ -12,26 +12,26 @@
 #define ITRANS(x) x-1
 #define OTRANS(x) x+1
 
-labelMap makeLabelMap(Image *im)
+LabelMap makeLabelMap(Image *im)
 {
-	labelMap lm={0, 0, NULL, NULL, NULL, NULL};
+	LabelMap lm={0, 0, NULL, NULL, NULL, NULL};
 	lm.labels=(int *)malloc(getNRows(im)*getNCols(im)*sizeof(int));
 	memset(lm.labels, 0, sizeof(getNRows(im)*getNCols(im)*sizeof(int)));
 	lm.im=im;
 	return lm;
 }
 
-int getLabel(labelMap *lm, int i, int j)
+int getLabel(LabelMap *lm, int i, int j)
 {
 	return lm->labels[i*getNCols(lm->im)+j];
 }
 
-void setLabel(labelMap *lm, int i, int j, int l)
+void setLabel(LabelMap *lm, int i, int j, int l)
 {
 	lm->labels[i*getNCols(lm->im)+j]=l;
 }
 
-void resolveLabel(labelMap *lm, int i, int j)
+void resolveLabel(LabelMap *lm, int i, int j)
 {
 	int l=getLabel(lm, i, j);
 	if (l > 0) {
@@ -43,14 +43,14 @@ void resolveLabel(labelMap *lm, int i, int j)
 	}
 }
 
-Image *getImage(labelMap *lm)
+Image *getImage(LabelMap *lm)
 {
 	return lm->im;
 }
 
-int getNLabels(labelMap *lm) { return lm->nLabels; }
+int getNLabels(LabelMap *lm) { return lm->nLabels; }
 
-void resizeClass(labelMap *lm, int c, int newSize)
+void resizeClass(LabelMap *lm, int c, int newSize)
 {
 	lm->classes[c]=(int *)realloc(lm->classes[c], (newSize+1)*sizeof(int));
 	if (lm->classes[c] == NULL) {
@@ -60,7 +60,7 @@ void resizeClass(labelMap *lm, int c, int newSize)
 	lm->classes[c][0]=newSize;
 }
 
-void addLabel(labelMap *lm)
+void addLabel(LabelMap *lm)
 {
 	int n, m;
 
@@ -81,7 +81,7 @@ void addLabel(labelMap *lm)
 	lm->nClasses++;
 }
 
-void mergeClasses(labelMap *lm, int toClass, int frClass)
+void mergeClasses(LabelMap *lm, int toClass, int frClass)
 {
 	int *top, *frp, toSize, frSize, i;
 
@@ -103,7 +103,7 @@ void mergeClasses(labelMap *lm, int toClass, int frClass)
 	resizeClass(lm, frClass, 0);
 }
 
-void setEquivalent(labelMap *lm, int i, int j)
+void setEquivalent(LabelMap *lm, int i, int j)
 { 
 	i=ITRANS(i);
 	j=ITRANS(j);
@@ -115,22 +115,22 @@ void setEquivalent(labelMap *lm, int i, int j)
 	lm->nClasses--;
 }
 
-int isEquivalent(labelMap *lm, int i, int j)
+int isEquivalent(LabelMap *lm, int i, int j)
 { 
 	return lm->map[ITRANS(i)] == lm->map[ITRANS(j)];
 }
 
-int getClass(labelMap *lm, int i)
+int getClass(LabelMap *lm, int i)
 {
 	return lm->map[ITRANS(i)];
 }
 
-int getNClasses(labelMap *lm)
+int getNClasses(LabelMap *lm)
 {
 	return lm->nClasses;
 }
 
-void verifyMap(labelMap *lm)
+void verifyMap(LabelMap *lm)
 {
 	int i, count=0;
 	
@@ -143,7 +143,7 @@ void verifyMap(labelMap *lm)
 	}
 }
 
-void reduceLabels(labelMap *lm)
+void reduceLabels(LabelMap *lm)
 {
 	int i, c=0;
 
@@ -164,7 +164,7 @@ void reduceLabels(labelMap *lm)
 	lm->nLabels=lm->nClasses;
 }
 
-void printClasses(labelMap *lm)
+void printClasses(LabelMap *lm)
 {
 	int i, *printed=(int *)malloc(lm->nLabels*sizeof(int));
 	memset(printed, 0, lm->nLabels*sizeof(int));
@@ -177,7 +177,7 @@ void printClasses(labelMap *lm)
 	free(printed);
 }
 
-void freeLabelMap(labelMap *lm)
+void freeLabelMap(LabelMap *lm)
 {
 	int i;
 	free(lm->map);

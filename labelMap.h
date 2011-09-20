@@ -1,51 +1,51 @@
 /**
- * labelMap.h
- * Function definitions for working with labelMap structs.
+ * LabelMap.h
+ * Function definitions for working with LabelMap structs.
  */
 
 #ifndef LABELMAP_H_
 #define LABELMAP_H_
 
-/** Make a new labelMap for the given Image */
-labelMap makeLabelMap(Image *);
+/** Make a new LabelMap for the given Image */
+LabelMap makeLabelMap(Image *);
 
 /** Get the label at a given pixel */
-int getLabel(labelMap *, int, int);
+int getLabel(LabelMap *, int, int);
 
 /** Set the label at a given pixel */
-void setLabel(labelMap *, int, int, int);
+void setLabel(LabelMap *, int, int, int);
 
 /** Resolve the label at a given pixel to its equivalence class */
-void resolveLabel(labelMap *, int, int);
+void resolveLabel(LabelMap *, int, int);
 
-/** Get a pointer to the Image to which this labelMap applies */
-Image *getImage(labelMap *);
+/** Get a pointer to the Image to which this LabelMap applies */
+Image *getImage(LabelMap *);
 
 /** Get the total number of (not necessarily distinct) labels in the map */
-int getNLabels(labelMap *);
+int getNLabels(LabelMap *);
 
-/** Add a new label to the labelMap */
-void addLabel(labelMap *);
+/** Add a new label to the LabelMap */
+void addLabel(LabelMap *);
 
-/** Check if two labels are equivalent under this labelMap */
-int isEquivalent(labelMap *, int, int);
+/** Check if two labels are equivalent under this LabelMap */
+int isEquivalent(LabelMap *, int, int);
 
-/** Set two labels equivalent under this labelMap */
-void setEquivalent(labelMap *, int, int);
+/** Set two labels equivalent under this LabelMap */
+void setEquivalent(LabelMap *, int, int);
 
 /** Get the minimum equivalent value for a given label */
-int getClass(labelMap *, int);
+int getClass(LabelMap *, int);
 
 /** Get the number of equivalence classes of labels */
-int getNClasses(labelMap *);
+int getNClasses(LabelMap *);
 
 /** Reduce the equivalence class labels to their minimum values */
-void reduceLabels(labelMap *);
+void reduceLabels(LabelMap *);
 
-/** Print the equivalence classes of the labelMap */
-void printClasses(labelMap *);
+/** Print the equivalence classes of the LabelMap */
+void printClasses(LabelMap *);
 
-/** Dellocate resources held by the labelMap */
-void freeLabelMap(labelMap *);
+/** Dellocate resources held by the LabelMap */
+void freeLabelMap(LabelMap *);
 
 #endif /* LABELMAP_H_ */
