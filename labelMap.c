@@ -130,24 +130,10 @@ int getNClasses(LabelMap *lm)
 	return lm->nClasses;
 }
 
-void verifyMap(LabelMap *lm)
-{
-	int i, count=0;
-	
-	for (i=0; i < lm->nLabels; ++i)
-		if (lm->classes[i][0]) count++;
-
-	if (count != lm->nClasses) {
-		fprintf(stderr, "class verification failed. expected: %d, got: %d\n", lm->nClasses, count);
-		exit(2);
-	}
-}
-
 void reduceLabels(LabelMap *lm)
 {
 	int i, c=0;
 
-	verifyMap(lm);
 	i=lm->nClasses;
 
 	while (c < lm->nClasses) {
