@@ -2,17 +2,13 @@
  * hw2.h
  * Contains useful typedefs and macros.
  */
-
 #ifndef HW2_H_
 #define HW2_H_
 
 #define BINARY 1
 #define DIM 2
 #define PIXEL_MAX 255
-#define DEG_PER_RAD (180.0f/PI)
-
-#include <stdlib.h>
-#include <stdio.h>
+#define DEG_PER_RAD 180.0/PI
 
 #include "vision_utilities.h"
 
@@ -28,7 +24,7 @@ typedef struct LabelMap {
 /** Holds an Object's second moment */
 typedef struct SecondMoment {
 	int a, b, c;
-	float thetaMin, thetaMax;
+	double thetaMin, thetaMax;
 } SecondMoment;
 
 /** Holds data on Objects found in an image */

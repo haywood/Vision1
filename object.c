@@ -3,7 +3,7 @@
  * Contains methods for the Object struct as defined in hw2.h.
  */
 
-#include <assert.h>
+#include <stdlib.h>
 #include <limits.h>
 
 #include "hw2.h"
@@ -41,7 +41,7 @@ void getObjects(Image *im, ObjectDB *odb)
 {
 	int i, j, px, 
 		 a, b, c;
-	float theta[2];
+	double theta[2];
 	double E[2];
 	Object *obj;
 
@@ -82,8 +82,8 @@ void getObjects(Image *im, ObjectDB *odb)
 			b=obj->sm.b;
 			c=obj->sm.c;
 
-			theta[0]=0.5f*atan((float)b/(a-c));
-			theta[1]=theta[0] + PI/2.0;
+			theta[0]=0.5*atan((double)b/(a-c));
+			theta[1]=fabs(theta[0] + PI/2.0);
 
 			E[0]=secondMoment(a, b, c, theta[0]);
 			E[1]=secondMoment(a, b, c, theta[1]);
@@ -119,75 +119,4 @@ void drawLines(Image *im, ObjectDB *odb)
 				obj->fm[1] + j,
 				getColors(im)-1);
 	}
-}
-
-void readDatabase(ObjectDB *odb, const char *dbname)
-{
-	FILE *f=fopen(dbname, "r");
-	float eMin, rndnss, inDeg;
-	int i=0, n, nFields=14;
-	char line[1024];
-	Object *o;
-
-	while (!feof(f)) {
-		fscanf(f, "%d", &odb->nObjects);
-		fgets(line, sizeof line, f);
-	}
-	
-	makeODB(odb, odb->nObjects);
-	
-	if (fseek(f, 0, SEEK_SET)) {
-		fprintf(stderr, "error reading database file\n");
-		exit(1);
-	}
-
-	while (i < odb->nObjects) {
-		o=odb->objs+(i++);
-		if ((n=fscanf(f, "%d %d %d %f %f %f %d %d %d %d %d %d %d %d",
-					&o->label,
-					o->fm, o->fm+1,
-					&eMin,
-					&inDeg,
-					&rndnss,
-					&o->area,
-					&o->sm.a, &o->sm.b, &o->sm.c,
-					&o->top, &o->bottom, &o->left, &o->right)) != nFields) {
-			fprintf(stderr, "bad database file. got %d fields instead of %d\n", n, nFields);
-			exit(1);
-		}
-		o->sm.thetaMin= PI - inDeg/DEG_PER_RAD;
-		o->sm.thetaMax= (float) PI/2 + o->sm.thetaMin;
-
-		fgets(line, sizeof line, f);
-	}
-	fclose(f);
-}
-
-void writeObject(FILE *f, Object *o)
-{
-	double eMin=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMin),
-			 eMax=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMax);
-	
-	fprintf(f, "%d %d %d %f %f %f %d %d %d %d %d %d %d %d\n",
-			o->label, 
-			o->fm[0], o->fm[1],
-			eMin,
-			DEG_PER_RAD*(PI - o->sm.thetaMin),
-			eMin/eMax,
-			o->area,
-			o->sm.a, o->sm.b, o->sm.c,
-			o->top, o->bottom, o->left, o->right);
-}
-
-void writeDatabase(ObjectDB *odb, const char *dbname)
-{
-	FILE *f=fopen(dbname, "w");
-	int i;
-	if (f == NULL) {
-		fprintf(stderr, "unable to write database\n");
-		return;
-	}
-	for (i=0; i < odb->nObjects; ++i)
-		writeObject(f, &odb->objs[i]);
-	fclose(f);
 }
