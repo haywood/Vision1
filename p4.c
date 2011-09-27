@@ -5,6 +5,8 @@
 
 #include "hw2.h"
 
+void filterObjects(Image *, ObjectDB *, ObjectDB *);
+
 int main(int argc, char *argv[])
 {
 	char *iim, *idb, * oim;
@@ -20,15 +22,40 @@ int main(int argc, char *argv[])
 	oim=argv[3];
 
 	readImage(&im, iim);
-	readDatabase(&known, idb);
-	makeODB(&newobjs, getColors(&im));
-	getObjects(&im, &newobjs);
-	drawLines(&im, &newobjs);
-	writeImage(&im, oim);
+	readDatabase(&known, idb); /* get the database of known objects */
+	makeODB(&newobjs, getColors(&im)); /* create the database for the input image */
+	getObjects(&im, &newobjs); /* fill the database for the input image */
+	filterObjects(&im, &newobjs, &known); /* find known objects in the database and throw away those unknown */
+	drawLines(&im, &newobjs); /* draw lines in the input image */
+	writeImage(&im, oim); /* write the output image */
 
 	free(newobjs.objs);
 	free(known.objs);
 	free(im.data);
 
 	return 0;
+}
+
+void filterObjects(Image *im, ObjectDB *test, ObjectDB *known)
+{
+	int recognized, i, j, px;
+
+	for (i=0; i < test->nObjects; ++i) {
+		recognized=0;
+		if (recognize(test->objs+i, known)) {
+			recognized=1;
+		}
+		if (!recognized) {
+			test->objs[i].label=0;
+		}
+	}
+
+	for (i=0; i < getNRows(im); ++i) {
+		for (j=0; j < getNCols(im); ++j) {
+			px=getPixel(im, i, j);
+			if ((px > 0) && !test->objs[px-1].label) {
+					setPixel(im, i, j, 0);
+			}
+		}
+	}
 }

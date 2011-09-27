@@ -12,6 +12,7 @@
 #define DEG_PER_RAD (180.0f/PI)
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 
 #include "vision_utilities.h"

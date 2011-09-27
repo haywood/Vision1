@@ -5,8 +5,20 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <float.h>
 
 #include "hw2.h"
+
+float roundness(Object *o)
+{
+	int a=o->sm.a, b=o->sm.b, c=o->sm.c;
+	return (float) secondMoment(a, b, c, o->sm.thetaMin)/secondMoment(a, b, c, o->sm.thetaMax);
+}
+
+double secondMoment(int a, int b, int c, double theta)
+{
+	return a*pow(sin(theta), 2) - b*sin(theta)*cos(theta) + c*pow(cos(theta), 2);
+}
 
 void makeODB(ObjectDB *odb, int n)
 {
@@ -30,11 +42,6 @@ void makeODB(ObjectDB *odb, int n)
 		sm->a=sm->b=sm->c=0.0;
 		sm->thetaMin=sm->thetaMax=0.0;
 	}
-}
-
-double secondMoment(int a, int b, int c, double theta)
-{
-	return a*pow(sin(theta), 2) - b*sin(theta)*cos(theta) + c*pow(cos(theta), 2);
 }
 
 void getObjects(Image *im, ObjectDB *odb)
@@ -121,6 +128,19 @@ void drawLines(Image *im, ObjectDB *odb)
 	}
 }
 
+int recognize(Object *test, ObjectDB *known)
+{
+	float rndnss=roundness(test);
+	int i;
+
+	for (i=0; i < known->nObjects; ++i) {
+		if ((rndnss - roundness(known->objs+i)) < DBL_EPSILON) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 void readDatabase(ObjectDB *odb, const char *dbname)
 {
 	FILE *f=fopen(dbname, "r");
@@ -165,15 +185,14 @@ void readDatabase(ObjectDB *odb, const char *dbname)
 
 void writeObject(FILE *f, Object *o)
 {
-	double eMin=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMin),
-			 eMax=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMax);
+	double eMin=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMin);
 	
 	fprintf(f, "%d %d %d %f %f %f %d %d %d %d %d %d %d %d\n",
 			o->label, 
 			o->fm[0], o->fm[1],
 			eMin,
 			DEG_PER_RAD*(PI - o->sm.thetaMin),
-			eMin/eMax,
+			roundness(o),
 			o->area,
 			o->sm.a, o->sm.b, o->sm.c,
 			o->top, o->bottom, o->left, o->right);

@@ -6,6 +6,9 @@
 #ifndef OBJECT_H_
 #define OBJECT_H_
 
+/** Calculate the roundness of an object (Emin/Emax) */
+float roundness(Object *);
+
 /** Evaluate the second moment for given a, b, c, theta */
 double secondMoment(int, int, int, double);
 
@@ -17,6 +20,9 @@ void makeODB(ObjectDB *, int);
 
 /** Fill the given ObjectDB with objects from the given image. */
 void getObjects(Image *, ObjectDB *);
+
+/** Test the given Object for recognition against the ObjectDB */
+int recognize(Object *, ObjectDB *);
 
 /** Read a file into an ObjectDB struct */
 void readDatabase(ObjectDB *, const char *);

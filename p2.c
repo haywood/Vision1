@@ -114,7 +114,7 @@ int evalNeighbor(int k, LabelMap *lm, int neighbors[NNEIGHB])
 	for (l=k+1; l < NNEIGHB; ++l)
 		if (neighbors[l]) {
 			setEquivalent(lm, neighbors[k], neighbors[l]);
-			if (neighbors[l] > c) c=neighbors[l];
+			if (neighbors[l] > c) c=neighbors[l]; /* always take the highest and therefore youngest label */
 		}
 	return c;
 }
@@ -127,15 +127,15 @@ void labelPixel(LabelMap *lm, int i, int j)
 		memset(neighbors, 0, sizeof neighbors);
 		newObj=getNeighbors(lm, i, j, neighbors);
 
-		if (!newObj) {
+		if (newObj) {
+			addLabel(lm);
+			c=getNLabels(lm);
+		} else {
 			for (k=0; k < NNEIGHB; ++k)
 				if (neighbors[k]) {
 					c=evalNeighbor(k, lm, neighbors);
 					break; /* break since finding one means checking the rest */
 				}
-		} else {
-			addLabel(lm);
-			c=getNLabels(lm);
 		}
 		setLabel(lm, i, j, c);
 		assert(getLabel(lm, i, j)==c);

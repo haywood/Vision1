@@ -43,7 +43,7 @@ int grayscale_to_binary(const char * ifname, const int threshold, const char * o
 
 	if (readImage(&im, ifname)==-1)
 	{
-		fprintf(stderr, "unable to read grayscale image");
+		fprintf(stderr, "unable to read grayscale image\n");
 		if (im.data != NULL) free(im.data);
 		exit(1);
 	}
@@ -63,7 +63,7 @@ int grayscale_to_binary(const char * ifname, const int threshold, const char * o
 
 	if (writeImage(&im, ofname) == -1)
 	{
-		fprintf(stderr, "unable to write binary image");
+		fprintf(stderr, "unable to write binary image\n");
 		ret=1;
 	}
 
