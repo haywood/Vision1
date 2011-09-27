@@ -38,12 +38,13 @@ int main(int argc, char *argv[])
 
 void filterObjects(Image *im, ObjectDB *test, ObjectDB *known)
 {
-	int recognized, i, j, px;
+	int recognized, i, j, px, n=0;
 
 	for (i=0; i < test->nObjects; ++i) {
 		recognized=0;
 		if (recognize(test->objs+i, known)) {
 			recognized=1;
+			n++;
 		}
 		if (!recognized) {
 			test->objs[i].label=0;
@@ -58,4 +59,19 @@ void filterObjects(Image *im, ObjectDB *test, ObjectDB *known)
 			}
 		}
 	}
+
+	i=0;
+	for (j=n; j < test->nObjects && i < n; ++j) {
+		while (i < n && test->objs[i].label) i++;
+		if (test->objs[j].label) {
+			memcpy(test->objs+i, test->objs+j, sizeof(Object));
+		}
+	}
+
+	test->objs=(Object *)realloc(test->objs, n*sizeof(Object));
+	if (test->objs == NULL) {
+		fprintf(stderr, "ran out of memory while filtering objects.\n");
+		exit(1);
+	}
+	test->nObjects=n;
 }

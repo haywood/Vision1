@@ -9,10 +9,36 @@
 
 #include "hw2.h"
 
+#define NFEATURES 3
+
+typedef float featureVector[NFEATURES];
+
 float roundness(Object *o)
 {
 	int a=o->sm.a, b=o->sm.b, c=o->sm.c;
 	return (float) secondMoment(a, b, c, o->sm.thetaMin)/secondMoment(a, b, c, o->sm.thetaMax);
+}
+
+float rectangularity(Object *o)
+{
+	int width=abs(o->left - o->right), 
+		 height=abs(o->top - o->bottom);
+	return (float) o->area/(width*height);
+}
+
+float squareness(Object *o)
+{
+	int width=abs(o->left - o->right), 
+		 height=abs(o->top - o->bottom);
+	int min, max;
+	if (width < height) {
+		min=width;
+		max=height;
+	} else {
+		min=height;
+		max=width;
+	}
+	return (float) min/max;
 }
 
 double secondMoment(int a, int b, int c, double theta)
@@ -128,13 +154,33 @@ void drawLines(Image *im, ObjectDB *odb)
 	}
 }
 
+void getFeatures(Object *o, featureVector v)
+{
+	v[0]=roundness(o);
+	v[1]=rectangularity(o);
+	v[2]=squareness(o);
+}
+
+int featureCmp(featureVector v1, featureVector v2)
+{
+	int i;
+	for (i=0; i < NFEATURES; ++i) {
+		if ((v1[i] - v2[i]) > FLT_EPSILON) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 int recognize(Object *test, ObjectDB *known)
 {
-	float rndnss=roundness(test);
+	featureVector tv, kv;
 	int i;
 
+	getFeatures(test, tv);
 	for (i=0; i < known->nObjects; ++i) {
-		if ((rndnss - roundness(known->objs+i)) < DBL_EPSILON) {
+		getFeatures(known->objs+i, kv);
+		if (featureCmp(tv, kv)) {
 			return 1;
 		}
 	}
