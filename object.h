@@ -18,4 +18,10 @@ void makeODB(ObjectDB *, int);
 /** Fill the given ObjectDB with objects from the given image. */
 void getObjects(Image *, ObjectDB *);
 
+/** Read a file into an ObjectDB struct */
+void readDatabase(ObjectDB *, const char *);
+
+/** Write the ObjectDB to the file with given name */
+void writeDatabase(ObjectDB *, const char *);
+
 #endif /* OBJECT_H_ */

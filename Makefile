@@ -22,7 +22,7 @@ UTILSH = vision_utilities.h
 P1SRC = p1.c
 P2SRC = p2.c LabelMap.c
 P3SRC = p3.c Object.c
-P4SRC = p4.c
+P4SRC = p4.c Object.c
 
 # Threshold for binarization. Change this.
 THRESHOLD = 111 
