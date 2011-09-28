@@ -12,8 +12,8 @@ float roundness(Object *);
 /** Calculate the ratio of an object's area to that of its bounding box */
 float rectangularity(Object *);
 
-/** Calculate the ratio of the shorter edge of the bounding box to the longer edge */
-float squareness(Object *);
+/** Calculate an objects Euler number */
+void euler(Image *, Object *);
 
 /** Evaluate the second moment for given a, b, c, theta */
 double secondMoment(int, int, int, double);

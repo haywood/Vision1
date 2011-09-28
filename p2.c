@@ -10,16 +10,8 @@
 
 #include "hw2.h"
 
-#define NNEIGHB 3
-enum {
-	WEST,
-	NORTHWEST,
-	NORTH
-};
-
 void binaryToLabeled(char *, char *);
 int isBinary(Image *);
-void labelPixel(LabelMap *, int, int);
 void resolvePixel(LabelMap *, int, int);
 void sequentialLabeling(Image *);
 
@@ -96,51 +88,6 @@ void sequentialLabeling(Image *im)
 	
 	setColors(im, getNClasses(&lm));
 	freeLabelMap(&lm);
-}
-
-int getNeighbors(LabelMap *lm, int i, int j, int neighbors[NNEIGHB])
-{
-	int has=0;
-	memset(neighbors, 0, sizeof neighbors);
-	if (j) has+=neighbors[WEST]=getLabel(lm, i, j-1);
-	if (i && j) has+=neighbors[NORTHWEST]=getLabel(lm, i-1, j-1);
-	if (i) has+=neighbors[NORTH]=getLabel(lm, i-1, j);
-	return !has;
-}
-
-int evalNeighbor(int k, LabelMap *lm, int neighbors[NNEIGHB])
-{
-	int l, c=neighbors[k];
-	for (l=k+1; l < NNEIGHB; ++l)
-		if (neighbors[l]) {
-			setEquivalent(lm, neighbors[k], neighbors[l]);
-			if (neighbors[l] > c) c=neighbors[l]; /* always take the highest and therefore youngest label */
-		}
-	return c;
-}
-
-void labelPixel(LabelMap *lm, int i, int j) 
-{
-	if (getPixel(lm->im, i, j) > 0) {
-		int neighbors[NNEIGHB], newObj, k, c;
-
-		memset(neighbors, 0, sizeof neighbors);
-		newObj=getNeighbors(lm, i, j, neighbors);
-
-		if (newObj) {
-			addLabel(lm);
-			c=getNLabels(lm);
-		} else {
-			for (k=0; k < NNEIGHB; ++k)
-				if (neighbors[k]) {
-					c=evalNeighbor(k, lm, neighbors);
-					break; /* break since finding one means checking the rest */
-				}
-		}
-		setLabel(lm, i, j, c);
-		assert(getLabel(lm, i, j)==c);
-		assert(lm->nClasses > 0);
-	}
 }
 
 void resolvePixel(LabelMap *lm, int i, int j)

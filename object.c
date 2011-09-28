@@ -26,19 +26,34 @@ float rectangularity(Object *o)
 	return (float) o->area/(width*height);
 }
 
-float squareness(Object *o)
+void euler(Image *im, Object *o)
 {
-	int width=abs(o->left - o->right), 
-		 height=abs(o->top - o->bottom);
-	int min, max;
-	if (width < height) {
-		min=width;
-		max=height;
-	} else {
-		min=height;
-		max=width;
+	int i=o->top, j=o->left, k, c, 
+		 neighbors[NNEIGHB], newObj;
+	LabelMap lm=makeLabelMap(im);
+
+	for (;i <= o->bottom; ++i) {
+		for (;j <= o->right; ++j) {
+			if (!getPixel(im, i, j)) {
+				newObj=getNeighbors(&lm, i, o->top, j, o->left, neighbors);
+				if (newObj) {
+					addLabel(&lm);
+					c=getNLabels(&lm);
+				} else {
+					for (k=0; k < NNEIGHB; ++k)
+						if (neighbors[k]) {
+							c=evalNeighbor(k, &lm, neighbors);
+							break; /* break since finding one means checking the rest */
+						}
+				}
+				setLabel(&lm, i, j, c);
+			}
+		}
 	}
-	return (float) min/max;
+
+	o->eulerNum=getNClasses(&lm);
+	printf("%d\n", o->eulerNum);
+	freeLabelMap(&lm);
 }
 
 double secondMoment(int a, int b, int c, double theta)
@@ -64,6 +79,7 @@ void makeODB(ObjectDB *odb, int n)
 		obj->area=0;
 		obj->label=i+1;
 		obj->fm[0]=obj->fm[1]=0;
+		obj->eulerNum=0;
 
 		sm->a=sm->b=sm->c=0.0;
 		sm->thetaMin=sm->thetaMax=0.0;
@@ -72,15 +88,15 @@ void makeODB(ObjectDB *odb, int n)
 
 void getObjects(Image *im, ObjectDB *odb)
 {
-	int i, j, px, 
-		 a, b, c;
+	int i, j, px, a, b, c,
+		 rows=getNRows(im), cols=getNCols(im);
 	float theta[2];
 	double E[2];
 	Object *obj;
 
 	/* get area, calculate bounding boxes, and begin calculating centers */
-	for (i=0; i < getNRows(im); ++i) {
-		for (j=0; j < getNRows(im); ++j) {
+	for (i=0; i < rows; ++i) {
+		for (j=0; j < cols; ++j) {
 			px=getPixel(im, i, j);
 			if (px > 0) {
 				obj=odb->objs+px-1;
@@ -128,6 +144,7 @@ void getObjects(Image *im, ObjectDB *odb)
 				obj->sm.thetaMin=theta[0];
 				obj->sm.thetaMax=theta[1];
 			}
+			euler(im, odb->objs+i);
 		}
 }
 
@@ -158,7 +175,7 @@ void getFeatures(Object *o, featureVector v)
 {
 	v[0]=roundness(o);
 	v[1]=rectangularity(o);
-	v[2]=squareness(o);
+	v[2]=o->eulerNum;
 }
 
 int featureCmp(featureVector v1, featureVector v2)

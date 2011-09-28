@@ -21,8 +21,8 @@ UTILSH = vision_utilities.h
 # then do not include them here (they will be autoincluded).
 P1SRC = p1.c
 P2SRC = p2.c LabelMap.c
-P3SRC = p3.c Object.c
-P4SRC = p4.c Object.c
+P3SRC = p3.c Object.c LabelMap.c
+P4SRC = p4.c Object.c LabelMap.c
 
 # Threshold for binarization. Change this.
 THRESHOLD = 111 
