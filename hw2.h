@@ -39,7 +39,7 @@ typedef struct Object {
 	SecondMoment sm;
 	int top, bottom, left, right;
 	int area;
-	int eulerNum;
+	int holes;
 } Object;
 
 typedef struct ObjectDB {

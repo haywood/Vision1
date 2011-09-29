@@ -28,7 +28,7 @@ void makeODB(ObjectDB *, int);
 void getObjects(Image *, ObjectDB *);
 
 /** Test the given Object for recognition against the ObjectDB */
-int recognize(Object *, ObjectDB *);
+int recognize(ObjectDB *, ObjectDB *);
 
 /** Read a file into an ObjectDB struct */
 void readDatabase(ObjectDB *, const char *);

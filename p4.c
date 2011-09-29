@@ -38,19 +38,15 @@ int main(int argc, char *argv[])
 
 void filterObjects(Image *im, ObjectDB *test, ObjectDB *known)
 {
-	int recognized, i, j, px, n=0;
+	int i, j, px, n=0;
+
+	recognize(test, known);
 
 	for (i=0; i < test->nObjects; ++i) {
-		recognized=0;
-		if (recognize(test->objs+i, known)) {
-			recognized=1;
+		if (test->objs[i].label) {
 			n++;
 		}
-		if (!recognized) {
-			test->objs[i].label=0;
-		}
 	}
-
 	for (i=0; i < getNRows(im); ++i) {
 		for (j=0; j < getNCols(im); ++j) {
 			px=getPixel(im, i, j);

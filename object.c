@@ -9,10 +9,10 @@
 
 #include "hw2.h"
 
-#define NFEATURES 3
-#define EPSILON 0.03
+#define NFEATURES 4
 
-typedef float featureVector[NFEATURES];
+double EPSILON[NFEATURES]={0.2, 0.3, 0.2, 0.2}; /* if two features differ by more than these fractions they will compare unequal */
+typedef double featureVector[NFEATURES]; /* used in object recognition for part 4 */
 
 /** Calculate the roundness of an object (Emin/Emax). */
 float roundness(Object *o)
@@ -38,12 +38,15 @@ void euler(Image *im, Object *o)
 {
 	int i, j, k, c, neighbors[NNEIGHB], 
 		 newObj, left, right;
-	LabelMap lm=makeLabelMap(im);
-	addLabel(&lm);
 
-	for (i=o->top; i <= o->bottom; ++i)
-		for (j=o->left; j <= o->right; ++j)
+	LabelMap lm=makeLabelMap(im);
+
+	/* this sets up a dummy class for background darkness */
+	addLabel(&lm);
+	for (i=0; i < getNRows(im); ++i)
+		for (j=0; j < getNCols(im); ++j)
 			if (!getPixel(im, i, j)) setLabel(&lm, i, j, 1);
+
 	for (i=o->top; i <= o->bottom; ++i) {
 		left=-1;
 		for (j=o->left; j <= o->right; ++j) {
@@ -52,7 +55,6 @@ void euler(Image *im, Object *o)
 				right=j; /* right-most so far */
 			} 
 		}
-
 		for (j=left; j <= right; ++j) {
 			if (!getPixel(im, i, j)) {
 				newObj=getNeighbors(&lm, i, o->top, j, left, neighbors);
@@ -71,7 +73,7 @@ void euler(Image *im, Object *o)
 		}
 	}
 
-	o->eulerNum=getNClasses(&lm)-1; /* number is off by one since i use a dummy class for non holes */
+	o->holes=getNClasses(&lm)-1; /* number is off by one because of dummy class */
 	freeLabelMap(&lm);
 }
 
@@ -98,7 +100,7 @@ void makeODB(ObjectDB *odb, int n)
 		obj->area=0;
 		obj->label=i+1;
 		obj->fm[0]=obj->fm[1]=0;
-		obj->eulerNum=0;
+		obj->holes=0;
 
 		sm->a=sm->b=sm->c=0.0;
 		sm->thetaMin=sm->thetaMax=0.0;
@@ -174,10 +176,13 @@ void getObjects(Image *im, ObjectDB *odb)
 				obj->sm.thetaMin=theta[0];
 				obj->sm.thetaMax=theta[1];
 			}
+
+			/* calculate how many holes are in the object */
 			euler(im, odb->objs+i);
 		}
 }
 
+/* Draw the minimum second moment of every object in the database */
 void drawLines(Image *im, ObjectDB *odb)
 {
 	double i, j;
@@ -208,32 +213,42 @@ void getFeatures(Object *o, featureVector v)
 {
 	v[0]=roundness(o);
 	v[1]=rectangularity(o);
-	v[2]=o->eulerNum;
+	v[2]=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMin);
+	v[3]=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMax);
 }
 
 /** Euclidean metric of two feature vectors */
-float featureCmp(featureVector v1, featureVector v2)
+int featureCmp(featureVector v1, featureVector v2)
 {
-	float sum=0.0f;
-	int i, diff;
+	double r;
+	int i;
 	for (i=0; i < NFEATURES; ++i) {
-			diff=v1[i]-v2[i];
-			sum+=diff*diff;
+		r=v1[i]/v2[i];
+		if (fabs(1.0 - r) > EPSILON[i]) {
+			return 0;
+		}
 	}
-	return sum;
+	return 1;
 }
 
-/** Compare two objects based on the definition of a feature vector as calculated in getFeatures */
-int recognize(Object *test, ObjectDB *known)
+/** Compare objects based on the definition of a feature vector as calculated in getFeatures. 
+ * Take the closest sufficiently close test object to each known one
+ * */
+int recognize(ObjectDB *test, ObjectDB *known)
 {
 	featureVector tv, kv;
-	int i;
+	int i, j;
 
-	getFeatures(test, tv);
+	for (i=0; i < test->nObjects; ++i) {
+		test->objs[i].label=0;
+	}
 	for (i=0; i < known->nObjects; ++i) {
 		getFeatures(known->objs+i, kv);
-		if (featureCmp(tv, kv) < EPSILON) {
-			return 1;
+		for (j=0; j < test->nObjects; ++j) {
+			getFeatures(test->objs+j, tv);
+			if (featureCmp(tv, kv)) {
+				test->objs[j].label=known->objs[i].label;
+			}
 		}
 	}
 	return 0;
@@ -268,7 +283,7 @@ void readDatabase(ObjectDB *odb, const char *dbname)
 					&inDeg,
 					&rndnss,
 					&o->area,
-					&o->eulerNum,
+					&o->holes,
 					&o->sm.a, &o->sm.b, &o->sm.c,
 					&o->top, &o->bottom, &o->left, &o->right)) != nFields) {
 			fprintf(stderr, "bad database file. got %d fields instead of %d\n", n, nFields);
@@ -293,7 +308,7 @@ void writeObject(FILE *f, Object *o)
 			DEG_PER_RAD*(PI/2 - o->sm.thetaMin),
 			roundness(o),
 			o->area,
-			o->eulerNum,
+			o->holes,
 			o->sm.a, o->sm.b, o->sm.c,
 			o->top, o->bottom, o->left, o->right);
 }
