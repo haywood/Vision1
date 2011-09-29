@@ -28,20 +28,32 @@ float rectangularity(Object *o)
 
 void euler(Image *im, Object *o)
 {
-	int i=o->top, j=o->left, k, c, 
-		 neighbors[NNEIGHB], newObj;
+	int i, j, k, c, neighbors[NNEIGHB], 
+		 newObj, left, right;
 	LabelMap lm=makeLabelMap(im);
+	addLabel(&lm);
 
-	for (;i <= o->bottom; ++i) {
-		for (;j <= o->right; ++j) {
+	for (i=o->top; i <= o->bottom; ++i)
+		for (j=o->left; j <= o->right; ++j)
+			if (!getPixel(im, i, j)) setLabel(&lm, i, j, 1);
+	for (i=o->top; i <= o->bottom; ++i) {
+		left=-1;
+		for (j=o->left; j <= o->right; ++j) {
+			if (getPixel(im, i, j) == o->label) {
+				if (left < 0) left=j; /* left edge for this row */
+				right=j; /* right-most so far */
+			} 
+		}
+
+		for (j=left; j <= right; ++j) {
 			if (!getPixel(im, i, j)) {
-				newObj=getNeighbors(&lm, i, o->top, j, o->left, neighbors);
+				newObj=getNeighbors(&lm, i, o->top, j, left, neighbors);
 				if (newObj) {
 					addLabel(&lm);
 					c=getNLabels(&lm);
 				} else {
 					for (k=0; k < NNEIGHB; ++k)
-						if (neighbors[k]) {
+						if (neighbors[k] > 0) {
 							c=evalNeighbor(k, &lm, neighbors);
 							break; /* break since finding one means checking the rest */
 						}
@@ -51,8 +63,8 @@ void euler(Image *im, Object *o)
 		}
 	}
 
-	o->eulerNum=getNClasses(&lm);
-	printf("%d\n", o->eulerNum);
+	o->eulerNum=getNClasses(&lm)-1; /* number is off by one since i use a dummy class for non holes */
+	printf("object at %d %d has %d holes\n", o->fm[0], o->fm[1], o->eulerNum);
 	freeLabelMap(&lm);
 }
 
@@ -88,7 +100,7 @@ void makeODB(ObjectDB *odb, int n)
 
 void getObjects(Image *im, ObjectDB *odb)
 {
-	int i, j, px, a, b, c,
+	int i, j, px, a, b, c, jp, ip,
 		 rows=getNRows(im), cols=getNCols(im);
 	float theta[2];
 	double E[2];
@@ -107,9 +119,6 @@ void getObjects(Image *im, ObjectDB *odb)
 				obj->fm[0]+=i;
 				obj->fm[1]+=j;
 				obj->area++;
-				obj->sm.a+=j*j;
-				obj->sm.b+=j*i;
-				obj->sm.c+=i*i;
 			}
 		}
 	}
@@ -120,18 +129,32 @@ void getObjects(Image *im, ObjectDB *odb)
 			obj=odb->objs+i;
 			for (j=0; j < DIM; ++j)
 				obj->fm[j]/=obj->area;
+		}
 
-			/* TODO Explain this reduction */
-			obj->sm.a-=obj->fm[1]*obj->fm[1]*obj->area;
-			obj->sm.b-=obj->fm[1]*obj->fm[0]*obj->area;
-			obj->sm.b*=2;
-			obj->sm.c-=obj->fm[0]*obj->fm[0]*obj->area;
+	/* get area, calculate bounding boxes, and begin calculating centers */
+	for (i=0; i < rows; ++i) {
+		for (j=0; j < cols; ++j) {
+			px=getPixel(im, i, j);
+			if (px > 0) {
+				obj=odb->objs+px-1;
+				ip=i-obj->fm[0];
+				jp=j-obj->fm[1];
+				obj->sm.a+=jp*jp;
+				obj->sm.b+=2*jp*ip;
+				obj->sm.c+=ip*ip;
+			}
+		}
+	}
 
+	/* finish centers and second moment coefficients */
+	for (i=0; i < odb->nObjects; ++i)
+		if (odb->objs[i].area > 0) {
+			obj=odb->objs+i;
 			a=obj->sm.a;
 			b=obj->sm.b;
 			c=obj->sm.c;
 
-			theta[0]=0.5f*atan((float)b/(a-c));
+			theta[0]=0.5f*atan2(b, a-c);
 			theta[1]=theta[0] + PI/2.0;
 
 			E[0]=secondMoment(a, b, c, theta[0]);
@@ -208,7 +231,7 @@ void readDatabase(ObjectDB *odb, const char *dbname)
 {
 	FILE *f=fopen(dbname, "r");
 	float eMin, rndnss, inDeg;
-	int i=0, n, nFields=14;
+	int i=0, n, nFields=15;
 	char line[1024];
 	Object *o;
 
@@ -226,13 +249,14 @@ void readDatabase(ObjectDB *odb, const char *dbname)
 
 	while (i < odb->nObjects) {
 		o=odb->objs+(i++);
-		if ((n=fscanf(f, "%d %d %d %f %f %f %d %d %d %d %d %d %d %d",
+		if ((n=fscanf(f, "%d %d %d %f %f %f %d %d %d %d %d %d %d %d %d",
 					&o->label,
 					o->fm, o->fm+1,
 					&eMin,
 					&inDeg,
 					&rndnss,
 					&o->area,
+					&o->eulerNum,
 					&o->sm.a, &o->sm.b, &o->sm.c,
 					&o->top, &o->bottom, &o->left, &o->right)) != nFields) {
 			fprintf(stderr, "bad database file. got %d fields instead of %d\n", n, nFields);
@@ -250,13 +274,14 @@ void writeObject(FILE *f, Object *o)
 {
 	double eMin=secondMoment(o->sm.a, o->sm.b, o->sm.c, o->sm.thetaMin);
 	
-	fprintf(f, "%d %d %d %f %f %f %d %d %d %d %d %d %d %d\n",
+	fprintf(f, "%d %d %d %f %f %f %d %d %d %d %d %d %d %d %d\n",
 			o->label, 
 			o->fm[0], o->fm[1],
 			eMin,
 			DEG_PER_RAD*(PI - o->sm.thetaMin),
 			roundness(o),
 			o->area,
+			o->eulerNum,
 			o->sm.a, o->sm.b, o->sm.c,
 			o->top, o->bottom, o->left, o->right);
 }
