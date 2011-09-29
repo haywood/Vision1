@@ -20,8 +20,10 @@
 /** Keeps track of which labels are equivalent for the sequential labeling algorithm */
 typedef struct LabelMap {
 	int nLabels, nClasses;
-	int *map, *labels, **classes;
-	Image *im;
+	int *map, /* map from labels to classes */
+		 *labels, /* an ints array for storing label by pixel. it uses ints because the chars overflow when this information is stored in the Image. */
+		 **classes; /* a mapping from classes to labels */
+	Image *im; /* the Image to which this LabelMap is relevant */
 } LabelMap;
 
 #include "LabelMap.h"
@@ -34,17 +36,17 @@ typedef struct SecondMoment {
 
 /** Holds data on Objects found in an image */
 typedef struct Object {
-	int label;
-	int fm[DIM];
-	SecondMoment sm;
-	int top, bottom, left, right;
-	int area;
-	int holes;
+	int label; /* Object label in its corresponding image */
+	int fm[DIM]; /* first moment  (row, col) */
+	SecondMoment sm; /* second moment */
+	int top, bottom, left, right; /* edeges of bounding box */
+	int area; /* area */
+	int holes; /* number of holes in the object */
 } Object;
 
 typedef struct ObjectDB {
-	Object *objs;
-   int nObjects;
+	Object *objs; /* An array of Object structs */
+   int nObjects; /* The number of Objects */
 } ObjectDB;
 
 #include "Object.h"

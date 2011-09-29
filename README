@@ -1,0 +1,30 @@
+COMS W4731 HW 2
+Michael Reed
+mhr2126
+
+Files
+	p1.c - source for problem 1. deps: hw2.h vision_utilities.h/c
+	p2.c - source for problem 2. deps: hw2.h vision_utilities.h/c LabelMap.h/c
+	p3.c - source for problem 3. deps: hw2.h vision_utilities.h/c Object.h/c
+	p4.c - source for problem 4. deps: hw2.h vision_utilities.h/c Object.h/c
+	hw2.h - contains typedefs for structs and includes LabelMap.h and Object.h Also has some useful macros
+	LabelMap.h - LabelMap specific function declarations. deps: vision_utilities.h
+	LabelMap.c - LabelMap specific function definitions. deps: hw2.h LabelMap.h vision_utilities.h/c
+	Object.h - Object specific function declarations. deps: vision_utilities.h/c
+	Object.c - Object specific function definitions. deps: hw2.h Object.h LabelMap.h vision_utilities.h/c
+
+Problem 1
+	p1 takes a grayscale image and outputs a binary one using a given threshold. I use a threshold of 111. I chose this to be the optimal threshold, because it is the lowest one that does not introduce noise into the binary output.
+
+Problem 2
+	p2 takes a binary image and labels the objects therein using the Sequential Labeling algorithm. This algorithm is implemented using the LabelMap struct defined in hw2.h and its methods as defined in LabelMap.h/c. The LabelMap struct keeps track of how many labels there are and which ones are equivalent.
+
+Problem 3
+	p3 takes a labeled image and outputs an object databse file along with a copy of the original image with lines along each object's minimum second moment. Uses the naive summation formula to calculate the parameters a, b, c of the second moment. This requires more operations, but there is no loss of precision since these are all integer values. I wanted to also calculate the number of holes in an object, but was unable to get my algorithm for this to work in practice. Each line output to the object database is of the form:
+
+	(label) (center row) (center column) (E min) (theta min) (roundness) (area) (number holes) (a) (b) (c) (top edge of bounding box) (bottom) (left) (right)
+
+Problem 4
+	p4 accepts an input labeled image and object database and outputs an image with labels and minimum moment lines for the objects that it recognizes. In calculating similarities, it uses a feature vector model consisting of (roundness, rectangularity, Emin, Emax), where rectangularity is the ratio of an object's area to that of its bounding box. Two objects compare equal, if the percent difference in their values for each dimension is below a dimension specific threshold. Threshold(roundness, rectangularity, Emin, Emax) = (0.2, 0.3, 0.2, 0.2). These values were determined experimentally from the data set.
+
+I tested my files on the provided test suite.

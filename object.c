@@ -30,7 +30,8 @@ float rectangularity(Object *o)
 }
 
 /** Calculate the the number of holes in the object o of the image i 
- * The function attempts to reverse the idea of sequential labeling in order to find black spots on objects
+ * The function attempts to reverse the idea of sequential labeling 
+ * in order to find black spots on objects
  * It still needs work.
  * TODO Make this work properly
  * */
@@ -176,9 +177,6 @@ void getObjects(Image *im, ObjectDB *odb)
 				obj->sm.thetaMin=theta[0];
 				obj->sm.thetaMax=theta[1];
 			}
-
-			/* calculate how many holes are in the object */
-			euler(im, odb->objs+i);
 		}
 }
 
