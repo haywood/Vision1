@@ -10,15 +10,18 @@
 #include "hw2.h"
 
 #define NFEATURES 3
+#define EPSILON 0.03
 
 typedef float featureVector[NFEATURES];
 
+/** Calculate the roundness of an object (Emin/Emax). */
 float roundness(Object *o)
 {
 	int a=o->sm.a, b=o->sm.b, c=o->sm.c;
 	return (float) secondMoment(a, b, c, o->sm.thetaMin)/secondMoment(a, b, c, o->sm.thetaMax);
 }
 
+/** Calculate the ratio of an object's area to that of its bounding box */
 float rectangularity(Object *o)
 {
 	int width=abs(o->left - o->right), 
@@ -26,6 +29,11 @@ float rectangularity(Object *o)
 	return (float) o->area/(width*height);
 }
 
+/** Calculate the the number of holes in the object o of the image i 
+ * The function attempts to reverse the idea of sequential labeling in order to find black spots on objects
+ * It still needs work.
+ * TODO Make this work properly
+ * */
 void euler(Image *im, Object *o)
 {
 	int i, j, k, c, neighbors[NNEIGHB], 
@@ -64,7 +72,6 @@ void euler(Image *im, Object *o)
 	}
 
 	o->eulerNum=getNClasses(&lm)-1; /* number is off by one since i use a dummy class for non holes */
-	printf("object at %d %d has %d holes\n", o->fm[0], o->fm[1], o->eulerNum);
 	freeLabelMap(&lm);
 }
 
@@ -123,7 +130,7 @@ void getObjects(Image *im, ObjectDB *odb)
 		}
 	}
 
-	/* finish centers and second moment coefficients */
+	/* finish centers */
 	for (i=0; i < odb->nObjects; ++i)
 		if (odb->objs[i].area > 0) {
 			obj=odb->objs+i;
@@ -131,14 +138,14 @@ void getObjects(Image *im, ObjectDB *odb)
 				obj->fm[j]/=obj->area;
 		}
 
-	/* get area, calculate bounding boxes, and begin calculating centers */
+	/* calculate a, b, c */
 	for (i=0; i < rows; ++i) {
 		for (j=0; j < cols; ++j) {
 			px=getPixel(im, i, j);
 			if (px > 0) {
 				obj=odb->objs+px-1;
-				ip=i-obj->fm[0];
-				jp=j-obj->fm[1];
+				ip=i - obj->fm[0];
+				jp=j - obj->fm[1];
 				obj->sm.a+=jp*jp;
 				obj->sm.b+=2*jp*ip;
 				obj->sm.c+=ip*ip;
@@ -146,7 +153,7 @@ void getObjects(Image *im, ObjectDB *odb)
 		}
 	}
 
-	/* finish centers and second moment coefficients */
+	/* calculate theatmin */
 	for (i=0; i < odb->nObjects; ++i)
 		if (odb->objs[i].area > 0) {
 			obj=odb->objs+i;
@@ -183,8 +190,10 @@ void drawLines(Image *im, ObjectDB *odb)
 		b=obj->right - obj->left;
 		h=obj->bottom - obj->top;
 		d=sqrt(b*b+h*h)/2.0;
+
 		i=d*sin(obj->sm.thetaMin);
 		j=d*cos(obj->sm.thetaMin);
+
 		line(im, 
 				obj->fm[0] - i,
 				obj->fm[1] - j,
@@ -194,6 +203,7 @@ void drawLines(Image *im, ObjectDB *odb)
 	}
 }
 
+/** Fill the feature vector v for the Object o */
 void getFeatures(Object *o, featureVector v)
 {
 	v[0]=roundness(o);
@@ -201,17 +211,19 @@ void getFeatures(Object *o, featureVector v)
 	v[2]=o->eulerNum;
 }
 
-int featureCmp(featureVector v1, featureVector v2)
+/** Euclidean metric of two feature vectors */
+float featureCmp(featureVector v1, featureVector v2)
 {
-	int i;
+	float sum=0.0f;
+	int i, diff;
 	for (i=0; i < NFEATURES; ++i) {
-		if ((v1[i] - v2[i]) > FLT_EPSILON) {
-			return 0;
-		}
+			diff=v1[i]-v2[i];
+			sum+=diff*diff;
 	}
-	return 1;
+	return sum;
 }
 
+/** Compare two objects based on the definition of a feature vector as calculated in getFeatures */
 int recognize(Object *test, ObjectDB *known)
 {
 	featureVector tv, kv;
@@ -220,7 +232,7 @@ int recognize(Object *test, ObjectDB *known)
 	getFeatures(test, tv);
 	for (i=0; i < known->nObjects; ++i) {
 		getFeatures(known->objs+i, kv);
-		if (featureCmp(tv, kv)) {
+		if (featureCmp(tv, kv) < EPSILON) {
 			return 1;
 		}
 	}
@@ -262,7 +274,7 @@ void readDatabase(ObjectDB *odb, const char *dbname)
 			fprintf(stderr, "bad database file. got %d fields instead of %d\n", n, nFields);
 			exit(1);
 		}
-		o->sm.thetaMin= PI - inDeg/DEG_PER_RAD;
+		o->sm.thetaMin= PI/2 - inDeg/DEG_PER_RAD;
 		o->sm.thetaMax= (float) PI/2 + o->sm.thetaMin;
 
 		fgets(line, sizeof line, f);
@@ -278,7 +290,7 @@ void writeObject(FILE *f, Object *o)
 			o->label, 
 			o->fm[0], o->fm[1],
 			eMin,
-			DEG_PER_RAD*(PI - o->sm.thetaMin),
+			DEG_PER_RAD*(PI/2 - o->sm.thetaMin),
 			roundness(o),
 			o->area,
 			o->eulerNum,
